@@ -32,8 +32,14 @@ export async function GET() {
         };
       }),
     }));
-    return Response.json({ stops,fetchedAt }, { headers:{ "Cache-Control":"public, max-age=10, stale-while-revalidate=20" } });
+    return Response.json({ stops,fetchedAt }, { headers:{
+      "Access-Control-Allow-Origin":"*",
+      "Cache-Control":"public, max-age=10, stale-while-revalidate=20",
+    } });
   } catch (error) {
-    return Response.json({ error:error instanceof Error ? error.message : "Не удалось получить прогноз" }, { status:502 });
+    return Response.json(
+      { error:error instanceof Error ? error.message : "Не удалось получить прогноз" },
+      { status:502, headers:{ "Access-Control-Allow-Origin":"*" } },
+    );
   }
 }
