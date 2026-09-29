@@ -1,4 +1,7 @@
-const API_URL = "https://school-548-bus-board.rosenbe.chatgpt.site/api/arrivals";
+const API_URLS = [
+  "https://pasha-music.132-243-23-229.sslip.io/api/arrivals",
+  "https://school-548-bus-board.rosenbe.chatgpt.site/api/arrivals",
+];
 const CACHE_KEY = "school-548-bus-board";
 
 const board = document.querySelector("#board");
@@ -89,9 +92,27 @@ async function load() {
   setStatus("loading");
   refresh.disabled = true;
   try {
-    const response = await fetch(API_URL, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    data = await response.json();
+    let lastError;
+    let nextData = null;
+    for (const url of API_URLS) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8_000);
+      try {
+        const response = await fetch(url, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        nextData = await response.json();
+        break;
+      } catch (error) {
+        lastError = error;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+    if (!nextData) throw lastError ?? new Error("No arrivals API is available");
+    data = nextData;
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     setStatus("live");
     now = Date.now();
