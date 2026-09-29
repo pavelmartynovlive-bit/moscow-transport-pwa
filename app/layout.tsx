@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Автобусы у школы № 548",
-  description: "Ближайшие автобусы на двух остановках у школы № 548.",
+  title: "Автобусы у школы № 508",
+  description: "Ближайшие автобусы на двух остановках у школы № 508.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Автобусы" },
   icons: {

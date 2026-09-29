@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#07090d" />
-    <meta name="description" content="Ближайшие автобусы на двух остановках у школы № 548." />
+    <meta name="theme-color" content="#080a0e" />
+    <meta name="description" content="Ближайшие автобусы на двух остановках у школы № 508." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Автобусы" />
@@ -12,14 +12,14 @@
     <link rel="icon" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>Автобусы у школы № 548</title>
+    <title>Автобусы у школы № 508</title>
   </head>
   <body>
     <main class="board-shell">
       <header class="topbar">
-        <div><p class="eyebrow">Автобусы рядом</p><h1>Школа № 548</h1></div>
-        <div class="board-meta">
-          <span class="connection loading" id="connection"><i></i><span>обновляем</span></span>
+        <h1>Школа № 508</h1>
+        <div class="clock-wrap">
+          <span class="status-dot loading" id="status-dot" aria-label="Обновляем данные" title="Обновляем данные"></span>
           <time id="clock">--:--:--</time>
         </div>
       </header>
@@ -30,8 +30,6 @@
       </div>
 
       <footer>
-        <span><i class="legend-live"></i> live — по положению автобуса</span>
-        <span><i class="legend-schedule"></i> расписание — расчётное время</span>
         <button id="refresh" type="button">Обновить</button>
       </footer>
     </main>

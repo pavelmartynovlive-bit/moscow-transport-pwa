@@ -6,11 +6,12 @@ type Arrival = { seconds: number; realtime: boolean };
 type RouteArrival = { number: string; destination: string; color: string; arrivals: Arrival[] };
 type StopBoard = { id: string; label: string; routes: RouteArrival[] };
 type BoardResponse = { stops: StopBoard[]; fetchedAt: number };
+type TimelineArrival = Arrival & { route: string };
 
 const CACHE_KEY = "school-548-bus-board";
 
 function formatArrival(seconds: number) {
-  if (seconds <= 45) return "подходит";
+  if (seconds <= 45) return "подъезжает";
   return `${Math.max(1, Math.round(seconds / 60))} мин`;
 }
 
@@ -20,44 +21,41 @@ function routeTone(route: string) {
   return "route-blue";
 }
 
-function RouteRow({ route, elapsed }: { route: RouteArrival; elapsed: number }) {
-  const arrivals = route.arrivals
-    .map((arrival) => ({ ...arrival, seconds: arrival.seconds - elapsed }))
+function timeline(stop: StopBoard, elapsed: number): TimelineArrival[] {
+  return stop.routes
+    .flatMap((route) => route.arrivals.map((arrival) => ({
+      ...arrival,
+      route: route.number,
+      seconds: arrival.seconds - elapsed,
+    })))
     .filter((arrival) => arrival.seconds > -45)
-    .slice(0, 3);
-
-  return (
-    <article className="route-row">
-      <div className={`route-number ${routeTone(route.number)}`}>{route.number}</div>
-      <div className="route-destination">
-        <span className="route-label">Куда</span>
-        <strong>{route.destination}</strong>
-      </div>
-      <div className="arrival-list" aria-label={`Прибытия маршрута ${route.number}`}>
-        {arrivals.length ? arrivals.map((arrival, index) => (
-          <div className={index === 0 ? "arrival primary" : "arrival"} key={`${arrival.seconds}-${index}`}>
-            <span>{formatArrival(arrival.seconds)}</span>
-            <small>{arrival.realtime ? "live" : "расписание"}</small>
-          </div>
-        )) : <div className="arrival-empty">Нет данных</div>}
-      </div>
-    </article>
-  );
+    .sort((a, b) => a.seconds - b.seconds)
+    .slice(0, 4);
 }
 
 function StopSection({ stop, elapsed, index }: { stop: StopBoard; elapsed: number; index: number }) {
+  const arrivals = timeline(stop, elapsed);
+
   return (
     <section className="stop-card" aria-labelledby={`stop-${index}`}>
-      <div className="stop-heading">
-        <div>
-          <span className="stop-index">Остановка {index + 1}</span>
-          <h2 id={`stop-${index}`}>{stop.label}</h2>
-        </div>
-        <span className="direction-mark" aria-hidden="true">→</span>
-      </div>
-      <div className="routes">
-        {stop.routes.map((route) => <RouteRow key={route.number} route={route} elapsed={elapsed} />)}
-      </div>
+      <header className="stop-heading">
+        <span className="stop-index">Остановка {index + 1}</span>
+        <h2 id={`stop-${index}`}>{stop.label}</h2>
+      </header>
+      <ol className="timeline">
+        {arrivals.length ? arrivals.map((arrival, arrivalIndex) => (
+          <li className={`arrival-row ${arrivalIndex === 0 ? "next" : ""}`} key={`${arrival.route}-${arrival.seconds}-${arrivalIndex}`}>
+            <div className="arrival-time">
+              {arrival.seconds > 45 && <span>через</span>}
+              <strong>{formatArrival(arrival.seconds)}</strong>
+            </div>
+            <div className="route-meta">
+              <span className={`route-number ${routeTone(arrival.route)}`}>{arrival.route}</span>
+              {!arrival.realtime && <small>по расписанию</small>}
+            </div>
+          </li>
+        )) : <li className="arrival-empty">Нет ближайших автобусов</li>}
+      </ol>
     </section>
   );
 }
@@ -104,13 +102,14 @@ export default function Home() {
   const clock = now ? new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit", minute: "2-digit", second: "2-digit",
   }).format(now) : "--:--:--";
+  const statusLabel = status === "live" ? "Данные обновляются" : status === "cached" ? "Показаны последние данные" : status === "error" ? "Нет связи" : "Обновляем данные";
 
   return (
     <main className="board-shell">
       <header className="topbar">
-        <div><p className="eyebrow">Автобусы рядом</p><h1>Школа № 548</h1></div>
-        <div className="board-meta">
-          <span className={`connection ${status}`}><i />{status === "live" ? "данные онлайн" : status === "cached" ? "последние данные" : status === "error" ? "нет связи" : "обновляем"}</span>
+        <h1>Школа № 508</h1>
+        <div className="clock-wrap">
+          <span className={`status-dot ${status}`} aria-label={statusLabel} title={statusLabel} />
           <time>{clock}</time>
         </div>
       </header>
@@ -125,11 +124,7 @@ export default function Home() {
         <div className="stop-grid" aria-label="Загрузка">{[0, 1].map((item) => <div className="stop-card skeleton" key={item} />)}</div>
       )}
 
-      <footer>
-        <span><i className="legend-live" /> live — по положению автобуса</span>
-        <span><i className="legend-schedule" /> расписание — расчётное время</span>
-        <button onClick={load} disabled={status === "loading"}>Обновить</button>
-      </footer>
+      <footer><button onClick={load} disabled={status === "loading"}>Обновить</button></footer>
     </main>
   );
 }

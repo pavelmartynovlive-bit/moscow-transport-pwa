@@ -1,11 +1,11 @@
 {
-  "name":"Автобусы у школы № 548",
+  "name":"Автобусы у школы № 508",
   "short_name":"Автобусы",
-  "description":"Ближайшие автобусы на двух остановках у школы № 548",
+  "description":"Ближайшие автобусы на двух остановках у школы № 508",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",
-  "background_color":"#07090d",
-  "theme_color":"#07090d",
+  "background_color":"#080a0e",
+  "theme_color":"#080a0e",
   "icons":[{"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }

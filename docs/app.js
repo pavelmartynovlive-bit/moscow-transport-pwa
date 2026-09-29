@@ -2,7 +2,7 @@ const API_URL = "https://school-548-bus-board.rosenbe.chatgpt.site/api/arrivals"
 const CACHE_KEY = "school-548-bus-board";
 
 const board = document.querySelector("#board");
-const connection = document.querySelector("#connection");
+const statusDot = document.querySelector("#status-dot");
 const clock = document.querySelector("#clock");
 const refresh = document.querySelector("#refresh");
 
@@ -20,17 +20,18 @@ function escapeHtml(value) {
 
 function setStatus(status) {
   const labels = {
-    loading: "обновляем",
-    live: "данные онлайн",
-    cached: "последние данные",
-    error: "нет связи",
+    loading: "Обновляем данные",
+    live: "Данные обновляются",
+    cached: "Показаны последние данные",
+    error: "Нет связи",
   };
-  connection.className = `connection ${status}`;
-  connection.querySelector("span").textContent = labels[status];
+  statusDot.className = `status-dot ${status}`;
+  statusDot.setAttribute("aria-label", labels[status]);
+  statusDot.title = labels[status];
 }
 
 function formatArrival(seconds) {
-  if (seconds <= 45) return "подходит";
+  if (seconds <= 45) return "подъезжает";
   return `${Math.max(1, Math.round(seconds / 60))} мин`;
 }
 
@@ -41,46 +42,47 @@ function routeTone(route) {
   return "route-blue";
 }
 
+function timeline(stop, elapsed) {
+  return stop.routes
+    .flatMap((route) => route.arrivals.map((arrival) => ({
+      ...arrival,
+      route: route.number,
+      seconds: arrival.seconds - elapsed,
+    })))
+    .filter((arrival) => arrival.seconds > -45)
+    .sort((a, b) => a.seconds - b.seconds)
+    .slice(0, 4);
+}
+
 function render() {
   if (!data) return;
   const elapsed = Math.max(0, Math.floor((now - data.fetchedAt) / 1000));
 
-  board.innerHTML = data.stops.map((stop, stopIndex) => `
-    <section class="stop-card" aria-labelledby="stop-${stopIndex}">
-      <div class="stop-heading">
-        <div>
+  board.innerHTML = data.stops.map((stop, stopIndex) => {
+    const arrivals = timeline(stop, elapsed);
+    return `
+      <section class="stop-card" aria-labelledby="stop-${stopIndex}">
+        <header class="stop-heading">
           <span class="stop-index">Остановка ${stopIndex + 1}</span>
           <h2 id="stop-${stopIndex}">${escapeHtml(stop.label)}</h2>
-        </div>
-        <span class="direction-mark" aria-hidden="true">→</span>
-      </div>
-      <div class="routes">
-        ${stop.routes.map((route) => {
-          const arrivals = route.arrivals
-            .map((arrival) => ({ ...arrival, seconds: arrival.seconds - elapsed }))
-            .filter((arrival) => arrival.seconds > -45)
-            .slice(0, 3);
-          return `
-            <article class="route-row">
-              <div class="route-number ${routeTone(route.number)}">${escapeHtml(route.number)}</div>
-              <div class="route-destination">
-                <span class="route-label">Куда</span>
-                <strong>${escapeHtml(route.destination)}</strong>
+        </header>
+        <ol class="timeline">
+          ${arrivals.length ? arrivals.map((arrival, arrivalIndex) => `
+            <li class="arrival-row ${arrivalIndex === 0 ? "next" : ""}">
+              <div class="arrival-time">
+                ${arrival.seconds > 45 ? "<span>через</span>" : ""}
+                <strong>${formatArrival(arrival.seconds)}</strong>
               </div>
-              <div class="arrival-list" aria-label="Прибытия маршрута ${escapeHtml(route.number)}">
-                ${arrivals.length ? arrivals.map((arrival, index) => `
-                  <div class="arrival ${index === 0 ? "primary" : ""}">
-                    <span>${formatArrival(arrival.seconds)}</span>
-                    <small>${arrival.realtime ? "live" : "расписание"}</small>
-                  </div>
-                `).join("") : '<div class="arrival-empty">Нет данных</div>'}
+              <div class="route-meta">
+                <span class="route-number ${routeTone(arrival.route)}">${escapeHtml(arrival.route)}</span>
+                ${arrival.realtime ? "" : "<small>по расписанию</small>"}
               </div>
-            </article>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `).join("");
+            </li>
+          `).join("") : '<li class="arrival-empty">Нет ближайших автобусов</li>'}
+        </ol>
+      </section>
+    `;
+  }).join("");
 }
 
 async function load() {
@@ -126,6 +128,4 @@ setInterval(tick, 1_000);
 tick();
 load();
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./sw.js");
-}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
